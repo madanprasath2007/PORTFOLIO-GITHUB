@@ -1,0 +1,5 @@
+{
+  "name": "GitHub Portfolio Analyzer",
+  "description": "A professional-grade tool that audits GitHub profiles, calculates an objective recruitment score, and provides AI-driven insights to improve technical presence.",
+  "requestFramePermissions": []
+}
