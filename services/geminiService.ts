@@ -7,38 +7,37 @@ export const generateAIInsights = async (
   repos: GitHubRepo[], 
   score: AnalysisScore
 ): Promise<AIInsights> => {
-  // Fix: Initializing GoogleGenAI with named parameter inside the function to ensure up-to-date config
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const prompt = `
-    Act as a senior technical recruiter. Analyze this GitHub profile data:
+    Act as a senior technical recruiter and system architect. Analyze this GitHub profile audit:
     Username: ${user.login}
-    Bio: ${user.bio}
-    Total Public Repos: ${user.public_repos}
+    Public Repos: ${user.public_repos}
     Followers: ${user.followers}
     
-    Scores (out of 100 total):
-    - Overall: ${score.overall}
-    - Documentation: ${score.breakdown.documentation}/20
-    - Code Quality: ${score.breakdown.codeQuality}/20
-    - Activity: ${score.breakdown.activity}/15
-    - Technical Depth: ${score.breakdown.technicalDepth}/15
-    - Impact: ${score.breakdown.impact}/15
-    - Collaboration: ${score.breakdown.collaboration}/5
-    - Organization: ${score.breakdown.organization}/10
+    DETAILED AUDIT BREAKDOWN:
+    - Overall Portfolio Score: ${score.overall}/100
+    - Documentation (READMEs, Setup): ${score.breakdown.documentation}/20
+    - Code Structure (Folders, Config, Tests): ${score.breakdown.codeQuality}/20
+    - Activity Consistency: ${score.breakdown.activity}/15
+    - Technical Depth (Fullstack, API, Logic): ${score.breakdown.technicalDepth}/15
+    - Impact Signaling (Deployment, Stars): ${score.breakdown.impact}/15
+    - Collaboration (Issues, PRs): ${score.breakdown.collaboration}/5
+    - Org (Naming, Descriptions): ${score.breakdown.organization}/10
 
-    Top 5 Repositories:
+    TOP REPOS FOR CONTEXT:
     ${repos.slice(0, 5).map(r => `- ${r.name}: ${r.description} (${r.language})`).join('\n')}
 
-    Generate a structured critique including:
-    1. A "Recruiter Verdict" (Hire Ready, Improving, or Weak).
-    2. 3-4 Key Strengths.
-    3. 2-3 "Red Flags" or areas of concern.
-    4. 4 specific, actionable improvements.
-    5. A 2-sentence professional summary.
+    CRITICAL REQUIREMENTS:
+    1. Verdict MUST be one of: 'Hire Ready' (Score 85+), 'Improving' (Score 60-84), or 'Weak' (Score <60).
+    2. Strengths: Focus on specific technical patterns found.
+    3. Red Flags: Identify specific missing professional traits (e.g., missing tests, poor naming, low activity).
+    4. Improvements: Provide a 4-step actionable roadmap.
+    5. Summary: A 2-sentence punchy recruiter evaluation.
+
+    Return JSON matching the schema provided.
   `;
 
-  // Fix: Using gemini-3-pro-preview for complex reasoning and technical auditing tasks
   const response = await ai.models.generateContent({
     model: 'gemini-3-pro-preview',
     contents: prompt,
@@ -59,19 +58,25 @@ export const generateAIInsights = async (
   });
 
   try {
-    // Fix: Accessing .text as a property and trimming for cleaner JSON parsing
     const text = response.text?.trim();
     if (!text) throw new Error("Empty response from AI model");
     const data = JSON.parse(text);
     return data as AIInsights;
   } catch (err) {
     console.error("AI parse error:", err);
+    // Conservative fallback
+    const verdict = score.overall >= 85 ? 'Hire Ready' : score.overall >= 60 ? 'Improving' : 'Weak';
     return {
-      verdict: score.overall > 80 ? 'Hire Ready' : score.overall > 50 ? 'Improving' : 'Weak',
-      strengths: ['Active presence', 'Open source visibility'],
-      redFlags: ['Inconsistent documentation', 'Lack of testing patterns'],
-      improvements: ['Add comprehensive READMEs', 'Increase test coverage', 'Use GitHub Actions'],
-      summary: `${user.login} shows potential with an overall score of ${score.overall}. Technical depth is visible but presentation could be refined.`
+      verdict,
+      strengths: ['Public contributions', 'Repository ownership'],
+      redFlags: ['Documentation depth could be improved'],
+      improvements: [
+        'Implement standardized linting and formatting',
+        'Add comprehensive READMEs for top projects',
+        'Increase repository organization consistency',
+        'Demonstrate more technical depth with a complex project'
+      ],
+      summary: `Candidate ${user.login} has a portfolio score of ${score.overall}. Their technical presence is ${verdict.toLowerCase()} with room for optimization in presentation.`
     };
   }
 };

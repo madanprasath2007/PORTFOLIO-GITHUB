@@ -85,6 +85,7 @@ const ResultPage: React.FC = () => {
   }
 
   const { user, score, insights, topRepos } = result;
+  const isConfidenceLow = user.public_repos < 3;
 
   const verdictColor = {
     'Hire Ready': 'text-emerald-400 bg-emerald-950/40 border-emerald-500/30',
@@ -102,11 +103,18 @@ const ResultPage: React.FC = () => {
           <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/5 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2 group-hover:bg-blue-600/10 transition-colors"></div>
           
           <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
-            <img 
-              src={user.avatar_url} 
-              alt={user.login} 
-              className="w-32 h-32 rounded-3xl border-2 border-gray-700 shadow-2xl transition-transform hover:scale-105"
-            />
+            <div className="relative">
+              <img 
+                src={user.avatar_url} 
+                alt={user.login} 
+                className="w-32 h-32 rounded-3xl border-2 border-gray-700 shadow-2xl transition-transform hover:scale-105"
+              />
+              {isConfidenceLow && (
+                <div className="absolute -bottom-3 -right-3 bg-yellow-500 text-black text-[8px] font-black px-2 py-1 rounded-full shadow-lg border border-black/10">
+                  LOW CONFIDENCE
+                </div>
+              )}
+            </div>
             <div className="text-center md:text-left">
               <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-2">{user.name || user.login}</h1>
               <p className="text-blue-500 font-bold mb-4 tracking-tight">github.com/{user.login}</p>
@@ -137,14 +145,19 @@ const ResultPage: React.FC = () => {
             <div className="bg-[#161b22] border border-gray-800 p-8 rounded-[2rem] shadow-xl">
               <div className="flex items-center justify-between mb-8">
                 <h3 className="text-2xl font-black text-white">Diagnostic Metrics</h3>
-                <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Confidence: High</span>
+                <div className="flex items-center gap-2">
+                   <div className={`w-2 h-2 rounded-full ${isConfidenceLow ? 'bg-yellow-500 animate-pulse' : 'bg-emerald-500'}`}></div>
+                   <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+                     Confidence: {isConfidenceLow ? 'Limited' : 'High'}
+                   </span>
+                </div>
               </div>
               <BreakdownChart breakdown={score.breakdown} />
               <div className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-4">
                 {Object.entries(score.breakdown).map(([key, val]) => (
                   <div key={key} className="p-5 bg-[#0d1117] rounded-2xl border border-gray-800 hover:border-blue-500/50 transition-colors">
                     <p className="text-[10px] uppercase font-black text-gray-600 mb-1">{key.replace(/([A-Z])/g, ' $1')}</p>
-                    <p className="text-2xl font-black text-white">{(val as number).toFixed(1)}</p>
+                    <p className="text-2xl font-black text-white">{val.toFixed(0)}</p>
                   </div>
                 ))}
               </div>
